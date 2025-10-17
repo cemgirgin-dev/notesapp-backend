@@ -105,6 +105,7 @@ def delete_note(
 
 
 @router.get("/{note_id}/pdf")
+@router.get("/{note_id}/export/pdf")
 def download_note_pdf(
     note_id: int,
     db: Session = Depends(get_db),
@@ -124,16 +125,17 @@ def download_note_pdf(
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
 
-    pdf.set_font("Arial", "B", 16)
+    pdf.set_font("Helvetica", "B", 16)
     pdf.multi_cell(0, 10, note.title)
 
     pdf.ln(4)
-    pdf.set_font("Arial", size=12)
+    pdf.set_font("Helvetica", size=12)
     # FPDF core fonts are latin-1. Unsupported characters are replaced to avoid runtime errors.
     safe_content = note.content.encode("latin-1", "replace").decode("latin-1")
     pdf.multi_cell(0, 8, safe_content)
 
-    pdf_bytes = pdf.output(dest="S").encode("latin-1")
+    pdf_output = pdf.output(dest="S")
+    pdf_bytes = pdf_output.encode("latin-1") if isinstance(pdf_output, str) else bytes(pdf_output)
     filename = f"{_slugify(note.title)}.pdf"
 
     return StreamingResponse(
